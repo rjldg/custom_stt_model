@@ -111,33 +111,6 @@ custom_STT_model/
 └─ tts_dataset/
 ```
 
-## Screenshots (placeholders) 🖼️
-
-![Daemon Console Placeholder](https://via.placeholder.com/800x300.png?text=Daemon+Console+Output)
-
-![Dataset Viewer Placeholder](https://via.placeholder.com/800x300.png?text=Dataset+Preview)
-
----
-
-## Architecture Diagram (Mermaid) 🧭
-
-```mermaid
-flowchart LR
-  A[Audio Sources] --> B[Data Generation Scripts]
-  B --> C[custom_dataset (training/testing)]
-  C --> D[Training / External Model]
-  D --> E[Optional: export model]
-  E --> F[custom_stt_daemon]
-  F --> G[Inference / Client]
-
-  subgraph Optional
-    D
-    E
-  end
-```
-
----
-
 ## Roadmap 🛣️
 
 - Add unit tests and CI pipeline
