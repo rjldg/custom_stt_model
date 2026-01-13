@@ -4,14 +4,11 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# --- Configuration (use env vars for safety) ---
-# export SPEECH_KEY="your-key"
-# export SPEECH_ENDPOINT="https://<region>.tts.speech.microsoft.com"
 speech_key = os.getenv("SPEECH_KEY", "<PUT_YOUR_KEY_HERE>")
 endpoint_url = os.getenv("SPEECH_ENDPOINT", "https://japaneast.tts.speech.microsoft.com")
 
 # Voice (adjust to a valid voice in your region)
-voice_name = "en-US-FableTurboMultilingualNeural"  # replace with a supported voice if needed
+voice_name = "en-US-FableTurboMultilingualNeural"
 
 # Text to synthesize
 text = "Hello, welcome to Azure AI Foundry!"
