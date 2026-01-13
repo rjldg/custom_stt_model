@@ -8,9 +8,14 @@ import azure.cognitiveservices.speech as speechsdk
 
 load_dotenv()
 
+# BASE STT DAEMON
 SPEECH_KEY   = os.getenv("SPEECH_KEY", "")
 SPEECH_REGION= os.getenv("SPEECH_REGION", "")
-CUSTOM_ENDPOINT_ID  = os.getenv("CUSTOM_ENDPOINT_ID", "")      # to follow: custom daemon endpoint id
+
+# CUSTOM STT DAEMON
+CUSTOM_ENDPOINT_ID  = os.getenv("CUSTOM_ENDPOINT_ID", "")
+CUSTOM_ENDPOINT_KEY = os.getenv("CUSTOM_ENDPOINT_KEY", "")
+
 LOCALE       = os.getenv("LOCALE", "en-US")
 INPUT_DIR    = os.getenv("INPUT_DIR", "./incoming_audio")
 USE_MIC      = os.getenv("USE_MIC", "false").lower() == "true"
@@ -21,10 +26,10 @@ SEG_INIT_SILENCE_TIMEOUT = os.getenv("SEGMENTATION_INIT_SILENCE_TIMEOUT_MS", "80
 SEG_END_SILENCE_TIMEOUT = os.getenv("SEGMENTATION_END_SILENCE_TIMEOUT_MS", "800")
 
 def build_speech_config() -> speechsdk.SpeechConfig:
-    if not SPEECH_KEY or not SPEECH_REGION:
-        raise RuntimeError("Set SPEECH_KEY and SPEECH_REGION in .env")
+    if not CUSTOM_ENDPOINT_KEY or not SPEECH_REGION:
+        raise RuntimeError("Set CUSTOM_ENDPOINT_KEY and SPEECH_REGION in .env")
 
-    cfg = speechsdk.SpeechConfig(subscription=SPEECH_KEY, region=SPEECH_REGION)
+    cfg = speechsdk.SpeechConfig(subscription=CUSTOM_ENDPOINT_KEY, region=SPEECH_REGION)
     # source language
     cfg.speech_recognition_language = LOCALE
 
