@@ -21,7 +21,7 @@ INPUT_DIR    = os.getenv("INPUT_DIR", "./incoming_audio")
 USE_MIC      = os.getenv("USE_MIC", "false").lower() == "true"
 
 # Segmentation component vars
-SEG_STRAT = os.getenv("SEGMENTATION_STRATEGY", "Semantic")  # Semantic | Coarse | Unknown
+SEG_STRAT = os.getenv("SEGMENTATION_STRATEGY", "Semantic")  # Semantic/Coarse/Unknown
 SEG_INIT_SILENCE_TIMEOUT = os.getenv("SEGMENTATION_INIT_SILENCE_TIMEOUT_MS", "800")
 SEG_END_SILENCE_TIMEOUT = os.getenv("SEGMENTATION_END_SILENCE_TIMEOUT_MS", "800")
 
@@ -47,43 +47,6 @@ def build_speech_config() -> speechsdk.SpeechConfig:
     cfg.set_property(speechsdk.PropertyId.SpeechServiceConnection_EndSilenceTimeoutMs, SEG_END_SILENCE_TIMEOUT)
 
     return cfg
-
-def transcribe_file(wav_path: Path) -> Optional[str]:
-    cfg = build_speech_config()
-    audio_input = speechsdk.AudioConfig(filename=str(wav_path))
-    recognizer = speechsdk.SpeechRecognizer(speech_config=cfg, audio_config=audio_input)
-
-    print(f"[STT] Transcribing: {wav_path.name} (locale={LOCALE})")
-    
-    # recognize once per file (simple); longer files need chunking or batch/fast STT.
-    result = recognizer.recognize_once()
-
-    if result.reason == speechsdk.ResultReason.RecognizedSpeech:
-        print(f"[STT] Text: {result.text}")
-        return result.text
-    elif result.reason == speechsdk.ResultReason.NoMatch:
-        print("[STT] No speech could be recognized.")
-    else:
-        print(f"[STT] Error: {result.reason} {result.cancellation_details.error_details}")
-    return None
-
-def watch_folder():
-    input_dir = Path(INPUT_DIR)
-    input_dir.mkdir(parents=True, exist_ok=True)
-    print(f"[Daemon] Watching folder: {input_dir.resolve()} (drop .wav/.mp3/.mp4 etc.)")
-    print(f"[Segmentation] Strategy={SEG_STRAT}, SilenceTimeout=[Init: {SEG_INIT_SILENCE_TIMEOUT}ms, End: {SEG_END_SILENCE_TIMEOUT}ms")
-
-    seen = set()
-    try:
-        while True:
-            # naive polling for scale, use watchdog/inotify, etc.
-            for p in input_dir.iterdir():
-                if p.is_file() and p.suffix.lower() in {".wav", ".mp3", ".mp4", ".m4a", ".flac"} and p not in seen:
-                    seen.add(p)
-                    transcribe_file(p)
-            time.sleep(2)
-    except KeyboardInterrupt:
-        print("\n[Daemon] Stopped.")
 
 def transcribe_microphone():
     """Continuous recognition to observe segmentation in action."""
@@ -134,7 +97,4 @@ def transcribe_microphone():
         recognizer.stop_continuous_recognition()
 
 if __name__ == "__main__":
-    if USE_MIC:
-        transcribe_microphone()
-    else:
-        watch_folder()
+    transcribe_microphone()
