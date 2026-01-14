@@ -26,7 +26,29 @@ SEG_INIT_SILENCE_TIMEOUT = os.getenv("SEGMENTATION_INIT_SILENCE_TIMEOUT_MS", "80
 SEG_END_SILENCE_TIMEOUT = os.getenv("SEGMENTATION_END_SILENCE_TIMEOUT_MS", "800")
 
 # Phrase list for boosting relevant context of domain-specific terms
-PHRASES = []
+
+PHRASE_LIST = [
+    "CSI Interfusion",
+    "Hello, you’ve reached CSI Interfusion support",
+    "Welcome to CSI Interfusion technical desk",
+    "Thank you for calling CSI Interfusion",
+    "Good afternoon, CSI Interfusion support here",
+    "Hi, this is CSI Interfusion customer care",
+    "OmniConnect setup",
+    "Secure gateway",
+    "Predictive analytics module",
+    "Advanced interoperability features",
+    "Compliance certifications",
+    "Latency optimization settings",
+    "Enterprise platform",
+    "Multilingual transcription",
+    "Confirm the status of my CSI Interfusion service request",
+    "Send me documentation for CSI Interfusion’s AI module",
+    "Upgrade my CSI Interfusion support plan to premium",
+    "Resetting my password for CSI Interfusion portal",
+    "Help me troubleshoot my CSI Interfusion integration issue",
+]
+
 
 def build_speech_config() -> speechsdk.SpeechConfig:
     if not CUSTOM_ENDPOINT_KEY or not SPEECH_REGION:
@@ -55,8 +77,9 @@ def build_speech_config() -> speechsdk.SpeechConfig:
 
 def attach_phrase_list(recognizer: speechsdk.SpeechRecognizer):
     pl = speechsdk.PhraseListGrammar.from_recognizer(recognizer)
-
-    for 
+    
+    for p in PHRASE_LIST:
+        pl.addPhrase(p)
 
 def transcribe_microphone():
     """Continuous recognition to observe segmentation in action."""
@@ -64,7 +87,7 @@ def transcribe_microphone():
     audio_input = speechsdk.AudioConfig(use_default_microphone=True)
     recognizer = speechsdk.SpeechRecognizer(speech_config=cfg, audio_config=audio_input)
 
-
+    attach_phrase_list(recognizer)
 
     print(f"[STT] Mic on (locale={LOCALE}) | Strategy={SEG_STRAT} | "
           f"SilenceTimeout=[Init: {SEG_INIT_SILENCE_TIMEOUT}ms, End: {SEG_END_SILENCE_TIMEOUT}ms")
