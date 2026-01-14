@@ -109,18 +109,15 @@ def transcribe_microphone():
         # final text for the segment that just closed
         
         if evt.result.reason == speechsdk.ResultReason.RecognizedSpeech:
-            # Display string (punctuation/capitalization)
-
             print(f"[Segment][Display]   {evt.result.text}")
 
-            # Detailed forms are available via evt.result.json (string) when OutputFormat is Detailed.
             try:
                 payload = json.loads(evt.result.json)
                 # payload structure: { "NBest": [ { "Display": "...", "Lexical": "...", "ITN": "...", "MaskedITN": "...", ... } ], ... }
                 best = payload.get("NBest", [{}])[0]
-                print(f"[Segment][Lexical]   {best.get('Lexical', '')}")
-                print(f"[Segment][ITN]       {best.get('ITN', '')}")
-                print(f"[Segment][MaskedITN] {best.get('MaskedITN', '')}")
+                #print(f"[Segment][Lexical]   {best.get('Lexical', '')}")
+                #print(f"[Segment][ITN]       {best.get('ITN', '')}")
+                #print(f"[Segment][MaskedITN] {best.get('MaskedITN', '')}")
                 # Optional: confidence, words with timings, etc., if present:
                 # print(f"[Segment][Confidence] {best.get('Confidence')}")
                 # for w in best.get("Words", []): print(w)
@@ -172,11 +169,8 @@ def transcribe_file(wav_path: Path) -> Optional[str]:
         # final text for the segment that just closed
         
         if evt.result.reason == speechsdk.ResultReason.RecognizedSpeech:
-            # Display string (punctuation/capitalization)
-
             print(f"[Segment][Display]   {evt.result.text}")
 
-            # Detailed forms are available via evt.result.json (string) when OutputFormat is Detailed.
             try:
                 payload = json.loads(evt.result.json)
                 # payload structure: { "NBest": [ { "Display": "...", "Lexical": "...", "ITN": "...", "MaskedITN": "...", ... } ], ... }
