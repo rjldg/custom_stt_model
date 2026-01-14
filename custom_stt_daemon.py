@@ -25,11 +25,16 @@ SEG_STRAT = os.getenv("SEGMENTATION_STRATEGY", "Semantic")  # Semantic/Coarse/Un
 SEG_INIT_SILENCE_TIMEOUT = os.getenv("SEGMENTATION_INIT_SILENCE_TIMEOUT_MS", "800")
 SEG_END_SILENCE_TIMEOUT = os.getenv("SEGMENTATION_END_SILENCE_TIMEOUT_MS", "800")
 
+# Phrase list for boosting relevant context of domain-specific terms
+PHRASES = []
+
 def build_speech_config() -> speechsdk.SpeechConfig:
     if not CUSTOM_ENDPOINT_KEY or not SPEECH_REGION:
         raise RuntimeError("Set CUSTOM_ENDPOINT_KEY and SPEECH_REGION in .env")
 
     cfg = speechsdk.SpeechConfig(subscription=CUSTOM_ENDPOINT_KEY, region=SPEECH_REGION)
+    recognizer = speechsdk.SpeechRecognizer(speech_config=cfg)
+
     # source language
     cfg.speech_recognition_language = LOCALE
 
@@ -48,11 +53,18 @@ def build_speech_config() -> speechsdk.SpeechConfig:
 
     return cfg
 
+def attach_phrase_list(recognizer: speechsdk.SpeechRecognizer):
+    pl = speechsdk.PhraseListGrammar.from_recognizer(recognizer)
+
+    for 
+
 def transcribe_microphone():
     """Continuous recognition to observe segmentation in action."""
     cfg = build_speech_config()
     audio_input = speechsdk.AudioConfig(use_default_microphone=True)
     recognizer = speechsdk.SpeechRecognizer(speech_config=cfg, audio_config=audio_input)
+
+
 
     print(f"[STT] Mic on (locale={LOCALE}) | Strategy={SEG_STRAT} | "
           f"SilenceTimeout=[Init: {SEG_INIT_SILENCE_TIMEOUT}ms, End: {SEG_END_SILENCE_TIMEOUT}ms")
