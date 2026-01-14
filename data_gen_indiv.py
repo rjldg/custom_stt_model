@@ -8,10 +8,10 @@ speech_key = os.getenv("SPEECH_KEY", "<PUT_YOUR_KEY_HERE>")
 endpoint_url = os.getenv("SPEECH_ENDPOINT", "https://japaneast.tts.speech.microsoft.com")
 
 # Voice (adjust to a valid voice in your region)
-voice_name = "en-US-FableTurboMultilingualNeural"
+voice_name = "zh-CN-XiaohanNeural"
 
 # Text to synthesize
-text = "Hello, welcome to Azure AI Foundry!"
+text = "下午好，你在做什么？"
 
 # --- Speech config ---
 speech_config = speechsdk.SpeechConfig(subscription=speech_key, endpoint=endpoint_url)

@@ -1,5 +1,6 @@
 import os
 import time
+import json
 from pathlib import Path
 from typing import Optional
 
@@ -78,6 +79,8 @@ def build_speech_config() -> speechsdk.SpeechConfig:
     # for profanity/vulgar word masking
     cfg.set_profanity(speechsdk.ProfanityOption.Masked)
 
+    cfg.output_format = speechsdk.OutputFormat.Detailed
+
     return cfg
 
 # phrase list attachment for boosting domain-specific terms' context
@@ -144,20 +147,63 @@ def transcribe_file(wav_path: Path) -> Optional[str]:
     recognizer = speechsdk.SpeechRecognizer(speech_config=cfg, audio_config=audio_input)
 
     attach_phrase_list(recognizer)
-
+    
     print(f"[STT] Transcribing: {wav_path.name} (locale={LOCALE})")
     
-    # recognize once per file (simple); longer files need chunking or batch/fast STT.
-    result = recognizer.recognize_once()
+    # hook into events to see both interim and final segment text
+    def recognizing_cb(evt: speechsdk.SpeechRecognitionEventArgs):
+        # partial (interim) text while a segment is still forming
+        if evt.result.reason == speechsdk.ResultReason.RecognizingSpeech:
+            print(f"  [Interim] {evt.result.text}")
 
-    if result.reason == speechsdk.ResultReason.RecognizedSpeech:
-        print(f"[STT] Text: {result.text}")
-        return result.text
-    elif result.reason == speechsdk.ResultReason.NoMatch:
-        print("[STT] No speech could be recognized.")
-    else:
-        print(f"[STT] Error: {result.reason} {result.cancellation_details.error_details}")
-    return None
+    def recognized_cb(evt: speechsdk.SpeechRecognitionEventArgs):
+        # final text for the segment that just closed
+        
+        
+        if evt.result.reason == speechsdk.ResultReason.RecognizedSpeech:
+            # Display string (punctuation/capitalization)
+            print(f"[Segment][Display]   {evt.result.text}")
+
+            # Detailed forms are available via evt.result.json (string) when OutputFormat is Detailed.
+            try:
+                payload = json.loads(evt.result.json)
+                # payload structure: { "NBest": [ { "Display": "...", "Lexical": "...", "ITN": "...", "MaskedITN": "...", ... } ], ... }
+                best = payload.get("NBest", [{}])[0]
+                print(f"[Segment][Lexical]   {best.get('Lexical', '')}")
+                print(f"[Segment][ITN]       {best.get('ITN', '')}")
+                print(f"[Segment][MaskedITN] {best.get('MaskedITN', '')}")
+                # Optional: confidence, words with timings, etc., if present:
+                # print(f"[Segment][Confidence] {best.get('Confidence')}")
+                # for w in best.get("Words", []): print(w)
+            except Exception as ex:
+                print(f"[Segment] (detailed JSON unavailable) {ex}")
+
+        
+
+    def session_started_cb(evt: speechsdk.SessionEventArgs):
+        print("[Session] Started")
+
+    def session_stopped_cb(evt: speechsdk.SessionEventArgs):
+        print("[Session] Stopped")
+
+    def canceled_cb(evt: speechsdk.SpeechRecognitionCanceledEventArgs):
+        print(f"[Canceled] {evt.reason} {evt.error_details}")
+
+    recognizer.recognizing.connect(recognizing_cb)
+    recognizer.recognized.connect(recognized_cb)
+    recognizer.session_started.connect(session_started_cb)
+    recognizer.session_stopped.connect(session_stopped_cb)
+    recognizer.canceled.connect(canceled_cb)
+
+    # start continuous recognition
+    recognizer.start_continuous_recognition()
+    try:
+        while True:
+            time.sleep(0.2)
+    except KeyboardInterrupt:
+        print("\n[STT] Pausing... Waiting on the next file")
+    finally:
+        recognizer.stop_continuous_recognition()
 
 def watch_folder():
     input_dir = Path(INPUT_DIR)
