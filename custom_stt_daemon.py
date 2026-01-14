@@ -49,7 +49,6 @@ PHRASE_LIST = [
     "Help me troubleshoot my CSI Interfusion integration issue",
 ]
 
-
 def build_speech_config() -> speechsdk.SpeechConfig:
     if not CUSTOM_ENDPOINT_KEY or not SPEECH_REGION:
         raise RuntimeError("Set CUSTOM_ENDPOINT_KEY and SPEECH_REGION in .env")
@@ -73,8 +72,15 @@ def build_speech_config() -> speechsdk.SpeechConfig:
     cfg.set_property(speechsdk.PropertyId.SpeechServiceConnection_InitialSilenceTimeoutMs, SEG_INIT_SILENCE_TIMEOUT)
     cfg.set_property(speechsdk.PropertyId.SpeechServiceConnection_EndSilenceTimeoutMs, SEG_END_SILENCE_TIMEOUT)
 
+    # for display text formatting
+    cfg.enable_dictation()
+
+    # for profanity/vulgar word masking
+    cfg.set_profanity(speechsdk.ProfanityOption.Masked)
+
     return cfg
 
+# phrase list attachment for boosting domain-specific terms' context
 def attach_phrase_list(recognizer: speechsdk.SpeechRecognizer):
     pl = speechsdk.PhraseListGrammar.from_recognizer(recognizer)
     
@@ -131,5 +137,50 @@ def transcribe_microphone():
     finally:
         recognizer.stop_continuous_recognition()
 
+# testing helper functions
+def transcribe_file(wav_path: Path) -> Optional[str]:
+    cfg = build_speech_config()
+    audio_input = speechsdk.AudioConfig(filename=str(wav_path))
+    recognizer = speechsdk.SpeechRecognizer(speech_config=cfg, audio_config=audio_input)
+
+    attach_phrase_list(recognizer)
+
+    print(f"[STT] Transcribing: {wav_path.name} (locale={LOCALE})")
+    
+    # recognize once per file (simple); longer files need chunking or batch/fast STT.
+    result = recognizer.recognize_once()
+
+    if result.reason == speechsdk.ResultReason.RecognizedSpeech:
+        print(f"[STT] Text: {result.text}")
+        return result.text
+    elif result.reason == speechsdk.ResultReason.NoMatch:
+        print("[STT] No speech could be recognized.")
+    else:
+        print(f"[STT] Error: {result.reason} {result.cancellation_details.error_details}")
+    return None
+
+def watch_folder():
+    input_dir = Path(INPUT_DIR)
+    input_dir.mkdir(parents=True, exist_ok=True)
+    print(f"[Daemon] Watching folder: {input_dir.resolve()} (drop .wav/.mp3/.mp4 etc.)")
+    print(f"[Segmentation] Strategy={SEG_STRAT}, SilenceTimeout=[Init: {SEG_INIT_SILENCE_TIMEOUT}ms, End: {SEG_END_SILENCE_TIMEOUT}ms")
+
+    seen = set()
+    try:
+        while True:
+            # naive polling for scale, use watchdog/inotify, etc.
+            for p in input_dir.iterdir():
+                if p.is_file() and p.suffix.lower() in {".wav", ".mp3", ".mp4", ".m4a", ".flac"} and p not in seen:
+                    seen.add(p)
+                    transcribe_file(p)
+            time.sleep(2)
+    except KeyboardInterrupt:
+        print("\n[Daemon] Stopped.")
+
 if __name__ == "__main__":
-    transcribe_microphone()
+    mic = str(input("Use microphone? (y/n): ")).strip().lower()
+
+    if mic == "y":
+        transcribe_microphone()
+    else:
+        watch_folder() 
