@@ -27,7 +27,6 @@ SEG_INIT_SILENCE_TIMEOUT = os.getenv("SEGMENTATION_INIT_SILENCE_TIMEOUT_MS", "80
 SEG_END_SILENCE_TIMEOUT = os.getenv("SEGMENTATION_END_SILENCE_TIMEOUT_MS", "800")
 
 # Phrase list for boosting relevant context of domain-specific terms
-
 PHRASE_LIST = [
     "CSI Interfusion",
     "Hello, you’ve reached CSI Interfusion support",
@@ -54,7 +53,7 @@ def build_speech_config() -> speechsdk.SpeechConfig:
     if not CUSTOM_ENDPOINT_KEY or not SPEECH_REGION:
         raise RuntimeError("Set CUSTOM_ENDPOINT_KEY and SPEECH_REGION in .env")
 
-    cfg = speechsdk.SpeechConfig(subscription=CUSTOM_ENDPOINT_KEY, region=SPEECH_REGION)
+    cfg = speechsdk.SpeechConfig(subscription=SPEECH_KEY, region=SPEECH_REGION)
     recognizer = speechsdk.SpeechRecognizer(speech_config=cfg)
 
     # source language
@@ -62,19 +61,17 @@ def build_speech_config() -> speechsdk.SpeechConfig:
 
     # for the custom daemon's custom endpoint
     if CUSTOM_ENDPOINT_ID:
-        cfg.endpoint_id = CUSTOM_ENDPOINT_ID 
+        #cfg.endpoint_id = CUSTOM_ENDPOINT_ID 
+        pass
 
     # optional tuning:
-    cfg.set_profanity(speechsdk.ProfanityOption.Masked)
-    cfg.enable_dictation()  # allows continuous-like punctuation
-
     # semantic segmentation
     cfg.set_property(speechsdk.PropertyId.Speech_SegmentationStrategy, SEG_STRAT)
     cfg.set_property(speechsdk.PropertyId.SpeechServiceConnection_InitialSilenceTimeoutMs, SEG_INIT_SILENCE_TIMEOUT)
     cfg.set_property(speechsdk.PropertyId.SpeechServiceConnection_EndSilenceTimeoutMs, SEG_END_SILENCE_TIMEOUT)
 
-    # for display text formatting
-    cfg.enable_dictation()
+    # for punctuation dictation (WARNING: affects segmentation behavior)
+    #cfg.enable_dictation()
 
     # for profanity/vulgar word masking
     cfg.set_profanity(speechsdk.ProfanityOption.Masked)
@@ -110,10 +107,25 @@ def transcribe_microphone():
 
     def recognized_cb(evt: speechsdk.SpeechRecognitionEventArgs):
         # final text for the segment that just closed
+        
         if evt.result.reason == speechsdk.ResultReason.RecognizedSpeech:
-            print(f"[Segment] {evt.result.text}")
-        elif evt.result.reason == speechsdk.ResultReason.NoMatch:
-            print("[Segment] (no match)")
+            # Display string (punctuation/capitalization)
+
+            print(f"[Segment][Display]   {evt.result.text}")
+
+            # Detailed forms are available via evt.result.json (string) when OutputFormat is Detailed.
+            try:
+                payload = json.loads(evt.result.json)
+                # payload structure: { "NBest": [ { "Display": "...", "Lexical": "...", "ITN": "...", "MaskedITN": "...", ... } ], ... }
+                best = payload.get("NBest", [{}])[0]
+                print(f"[Segment][Lexical]   {best.get('Lexical', '')}")
+                print(f"[Segment][ITN]       {best.get('ITN', '')}")
+                print(f"[Segment][MaskedITN] {best.get('MaskedITN', '')}")
+                # Optional: confidence, words with timings, etc., if present:
+                # print(f"[Segment][Confidence] {best.get('Confidence')}")
+                # for w in best.get("Words", []): print(w)
+            except Exception as ex:
+                print(f"[Segment] (detailed JSON unavailable) {ex}")
 
     def session_started_cb(evt: speechsdk.SessionEventArgs):
         print("[Session] Started")
@@ -159,9 +171,9 @@ def transcribe_file(wav_path: Path) -> Optional[str]:
     def recognized_cb(evt: speechsdk.SpeechRecognitionEventArgs):
         # final text for the segment that just closed
         
-        
         if evt.result.reason == speechsdk.ResultReason.RecognizedSpeech:
             # Display string (punctuation/capitalization)
+
             print(f"[Segment][Display]   {evt.result.text}")
 
             # Detailed forms are available via evt.result.json (string) when OutputFormat is Detailed.
@@ -177,8 +189,6 @@ def transcribe_file(wav_path: Path) -> Optional[str]:
                 # for w in best.get("Words", []): print(w)
             except Exception as ex:
                 print(f"[Segment] (detailed JSON unavailable) {ex}")
-
-        
 
     def session_started_cb(evt: speechsdk.SessionEventArgs):
         print("[Session] Started")
@@ -224,7 +234,7 @@ def watch_folder():
         print("\n[Daemon] Stopped.")
 
 if __name__ == "__main__":
-    mic = str(input("Use microphone? (y/n): ")).strip().lower()
+    mic = str(input("Use microphone? (Y/N): ")).strip().lower()
 
     if mic == "y":
         transcribe_microphone()
