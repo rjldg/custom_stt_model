@@ -53,7 +53,7 @@ def build_speech_config() -> speechsdk.SpeechConfig:
     if not CUSTOM_ENDPOINT_KEY or not SPEECH_REGION:
         raise RuntimeError("Set CUSTOM_ENDPOINT_KEY and SPEECH_REGION in .env")
 
-    cfg = speechsdk.SpeechConfig(subscription=SPEECH_KEY, region=SPEECH_REGION)
+    cfg = speechsdk.SpeechConfig(subscription=CUSTOM_ENDPOINT_KEY, region=SPEECH_REGION)
     recognizer = speechsdk.SpeechRecognizer(speech_config=cfg)
 
     # source language
@@ -61,8 +61,7 @@ def build_speech_config() -> speechsdk.SpeechConfig:
 
     # for the custom daemon's custom endpoint
     if CUSTOM_ENDPOINT_ID:
-        #cfg.endpoint_id = CUSTOM_ENDPOINT_ID 
-        pass
+        cfg.endpoint_id = CUSTOM_ENDPOINT_ID 
 
     # optional tuning:
     # semantic segmentation
