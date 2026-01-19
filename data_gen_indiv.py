@@ -11,7 +11,7 @@ endpoint_url = os.getenv("SPEECH_ENDPOINT", "https://japaneast.tts.speech.micros
 voice_name = "en-US-AvaMultilingualNeural"
 
 # Text to synthesize
-text = "Good morning, have you eaten lunch yet?"
+text = "We will benchmark Tee-Tee-S for Azure Cognitive Services Speech in West US, targeting the glossary;"
 
 # --- Speech config ---
 speech_config = speechsdk.SpeechConfig(subscription=speech_key, endpoint=endpoint_url)
